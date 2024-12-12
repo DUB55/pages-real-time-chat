@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Chat Platform</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Chat</title>
   <style>
     body {
       margin: 0;
@@ -64,7 +66,6 @@
       color: rgba(255, 255, 255, 0.5);
     }
 
-    /* Chat UI - Initially Hidden */
     .chat-container {
       display: none;
       width: 90%;
@@ -147,7 +148,6 @@
       transform: translateY(-2px);
     }
 
-    /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -163,93 +163,54 @@
   </style>
 </head>
 <body>
-  <!-- Welcome Screen -->
-  <div class="welcome-container" id="welcome-screen">
-    <div class="welcome-text">Vul je naam in...</div>
+  <div class="welcome-container">
+    <h1 class="welcome-text">Welcome to the Real-Time Chat</h1>
     <div class="name-container">
-      <input type="text" id="name" class="name-input" placeholder="Naam..." autocomplete="off">
+      <input type="text" class="name-input" id="nameInput" placeholder="Enter your name" />
     </div>
   </div>
 
-  <!-- Chat Interface -->
-  <div class="chat-container" id="chat-interface" style="display: none;">
+  <div class="chat-container" id="chatContainer">
     <ul id="messages"></ul>
-    <form id="chat-form" class="input-container">
-      <textarea id="m" class="message-input" placeholder="Bericht..." rows="1"></textarea>
-      <button type="submit">Verstuur</button>
-    </form>
+    <div class="input-container">
+      <textarea class="message-input" id="messageInput" placeholder="Type a message..."></textarea>
+      <button id="sendButton">Send</button>
+    </div>
   </div>
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
   <script>
-    const socket = io('https://real-time-chat-eosin-rho.vercel.app', {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    });
+    const socket = io("http://localhost:3000"); // Replace with the public URL if hosted on the internet
 
-    const welcomeScreen = document.getElementById('welcome-screen');
-    const chatInterface = document.getElementById('chat-interface');
-    const nameInput = document.getElementById('name');
-    const chatForm = document.getElementById('chat-form');
-    const messageInput = document.getElementById('m');
-    const messages = document.getElementById('messages');
+    // Get elements
+    const chatContainer = document.getElementById("chatContainer");
+    const nameInput = document.getElementById("nameInput");
+    const messageInput = document.getElementById("messageInput");
+    const sendButton = document.getElementById("sendButton");
+    const messagesList = document.getElementById("messages");
 
-    // Handle name input
-    nameInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && this.value.trim()) {
-        e.preventDefault();
-        welcomeScreen.style.display = 'none';
-        chatInterface.style.display = 'block';
-        // Notify when user joins
-        socket.emit('user joined', nameInput.value);
+    // Show chat UI when name is entered
+    nameInput.addEventListener("input", function () {
+      if (nameInput.value.trim() !== "") {
+        chatContainer.style.display = "block";
       }
     });
 
-    function scrollToBottom() {
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    // Handle message submission
-    chatForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const messageText = messageInput.value.trim();
-      if (messageText) {
-        const timestamp = new Date().toLocaleTimeString();
-        const message = {
-          name: nameInput.value,
-          text: messageText,
-          time: timestamp
-        };
-        socket.emit('chat message', message);
-        messageInput.value = '';
-        messageInput.style.height = '40px';
+    // Send a message when the send button is clicked
+    sendButton.addEventListener("click", function () {
+      const message = messageInput.value.trim();
+      if (message !== "") {
+        socket.emit("chat message", message); // Emit message to the server
+        messageInput.value = ""; // Clear the input
       }
     });
 
-    socket.on('chat message', (msg) => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span class="timestamp">${msg.time}</span>
-        <span class="username">${msg.name}</span>
-        <span class="message-text">${msg.text}</span>
-      `;
-      messages.appendChild(li);
-      scrollToBottom();
-    });
-
-    socket.on('chat history', (history) => {
-      messages.innerHTML = '';
-      history.forEach((msg) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <span class="timestamp">${msg.time}</span>
-          <span class="username">${msg.name}</span>
-          <span class="message-text">${msg.text}</span>
-        `;
-        messages.appendChild(li);
-      });
-      scrollToBottom();
+    // Listen for incoming messages
+    socket.on("chat message", function (msg) {
+      const li = document.createElement("li");
+      li.textContent = msg;
+      messagesList.appendChild(li);
+      messagesList.scrollTop = messagesList.scrollHeight; // Scroll to the bottom
     });
   </script>
 </body>
